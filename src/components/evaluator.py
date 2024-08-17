@@ -1,12 +1,12 @@
 """ Module containing the Evaluation class. """
 
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model  # type: ignore
 import os
 import mlflow
 import joblib
 import pandas as pd
 from sklearn.metrics import accuracy_score, precision_score, \
-                            recall_score, f1_score, roc_auc_score
+    recall_score, f1_score, roc_auc_score
 from src.logger import logging
 
 
@@ -33,9 +33,19 @@ class Evaluator:
         """
         Evaluates the model on the test data and logs metrics to MLflow.
         """
+        os.makedirs(self.output_path, exist_ok=True)
+
+        output_path = os.path.join(self.output_path, "metrics.json")
+
         try:
             with mlflow.start_run(run_name="Model Evaluation", nested=True):
                 logging.info("Evaluating the model...")
+
+                if os.path.exists(output_path):
+                    logging.info("Model evaluation already completed. \
+                        Skipping evaluation.")
+                    mlflow.log_artifact(output_path)
+                    return
 
                 # Make predictions
                 predictions = self.model.predict(self.X_test).ravel()
@@ -57,10 +67,6 @@ class Evaluator:
                     "roc_auc_score": roc_auc
                 }
 
-                os.makedirs(self.output_path, exist_ok=True)
-
-                output_path = os.path.join(self.output_path, "metrics.json")
-
                 joblib.dump(metrics, output_path)
 
                 mlflow.log_metrics(metrics)
@@ -80,7 +86,8 @@ class Evaluator:
             Model: The loaded Keras model.
         """
         try:
-            model = load_model(self.model_path)
+            model_path = os.path.join(self.model_path, "model.keras")
+            model = load_model(model_path)
             logging.info("Model loaded successfully.")
             return model
         except Exception as e:

@@ -1,12 +1,24 @@
 """ Module containing the Trainer class. """
 
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Input
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.models import Sequential  # type: ignore
+from tensorflow.keras.layers import Dense, Dropout, Input  # type: ignore
+from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
 import os
 import mlflow
 import pandas as pd
 from src.logger import logging
+from src.constants import (
+    FIRST_DENSE_LAYER_UNITS,
+    SECOND_DENSE_LAYER_UNITS,
+    OUTPUT_DENSE_LAYER_UNITS,
+    FIRST_DROPOUT_LAYER,
+    SECOND_DROPOUT_LAYER,
+    RELU_ACTIVATION,
+    SIGMOID_ACTIVATION,
+    EPOCHS, BATCH_SIZE,
+    COMPILE_ARGS,
+    EARLY_STOPPING_ARGS
+)
 
 
 class Trainer:
@@ -32,8 +44,15 @@ class Trainer:
         """
         Trains the model.
         """
+        os.makedirs(self.model_path, exist_ok=True)
+        model_file_path = os.path.join(self.model_path, 'model.keras')
+
         try:
             with mlflow.start_run(run_name="Model Training", nested=True):
+                if os.path.exists(model_file_path):
+                    logging.info("Model already trained. Skipping training.")
+                    mlflow.log_artifact(model_file_path)
+                    return
 
                 logging.info("Creating the model...")
                 model = self._create_model()
@@ -42,19 +61,17 @@ class Trainer:
                 model = self._compile_model(model)
 
                 logging.info("Training the model...")
-                early_stopping = EarlyStopping(monitor='val_loss', patience=3)
+                early_stopping = EarlyStopping(**EARLY_STOPPING_ARGS)
                 history = model.fit(
                     self.X_train, self.y_train,
                     validation_data=(self.X_test, self.y_test),
-                    epochs=50, batch_size=32,
+                    epochs=EPOCHS, batch_size=BATCH_SIZE,
                     callbacks=[early_stopping]
                 )
 
                 logging.info("Training completed.")
 
                 # Save the model
-                model_file_path = os.path.join(self.model_path, 'model.keras')
-                os.makedirs(self.model_path, exist_ok=True)
                 model.save(model_file_path)
                 mlflow.log_artifact(model_file_path)
                 logging.info(f"Model saved to {model_file_path}")
@@ -72,11 +89,11 @@ class Trainer:
         """
         model = Sequential([
             Input(shape=(self.X_train.shape[1],)),
-            Dense(32, activation='relu'),
-            Dropout(0.2),
-            Dense(32, activation='relu'),
-            Dropout(0.3),
-            Dense(1, activation='sigmoid')
+            Dense(FIRST_DENSE_LAYER_UNITS, activation=RELU_ACTIVATION),
+            Dropout(FIRST_DROPOUT_LAYER),
+            Dense(SECOND_DENSE_LAYER_UNITS, activation=RELU_ACTIVATION),
+            Dropout(SECOND_DROPOUT_LAYER),
+            Dense(OUTPUT_DENSE_LAYER_UNITS, activation=SIGMOID_ACTIVATION)
         ])
 
         return model
@@ -115,17 +132,9 @@ class Trainer:
         Returns:
             Sequential: The compiled model.
         """
-        model.compile(optimizer="adam",
-                      loss="binary_crossentropy",
-                      metrics=["accuracy"])
+        model.compile(**COMPILE_ARGS)
 
-        compile_params = {
-            "optimizer": "adam",
-            "loss": "binary_crossentropy",
-            "metrics": ["accuracy"]
-        }
-
-        mlflow.log_params(compile_params)
+        mlflow.log_params(COMPILE_ARGS)
 
         return model
 

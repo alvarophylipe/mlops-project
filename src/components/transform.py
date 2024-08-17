@@ -39,9 +39,22 @@ class Transform:
         KeyError: If the target column 'Attrition' is not in the dataset.
         Exception: For any other unexpected issues during data transformation.
         """
+        os.makedirs(self.output_path, exist_ok=True)
+
+        train_output_path = os.path.join(self.output_path, "train.csv")
+        test_output_path = os.path.join(self.output_path, "test.csv")
+
         try:
             with mlflow.start_run(run_name="Data Transformation", nested=True):
                 logging.info("Data Transformation")
+
+                if os.path.exists(train_output_path) and \
+                   os.path.exists(test_output_path):
+                    logging.info("Data already exists in %s",
+                                 self.output_path)
+                    mlflow.log_artifact(train_output_path)
+                    mlflow.log_artifact(test_output_path)
+                    return
 
                 df = pd.read_csv(self.input_path)
                 y = df["Attrition"]
@@ -78,11 +91,6 @@ class Transform:
                 train_df, test_df = train_test_split(df_processed,
                                                      test_size=0.2,
                                                      random_state=42)
-
-                os.makedirs(self.output_path, exist_ok=True)
-
-                train_output_path = os.path.join(self.output_path, "train.csv")
-                test_output_path = os.path.join(self.output_path, "test.csv")
 
                 train_df.to_csv(train_output_path, index=False)
                 test_df.to_csv(test_output_path, index=False)

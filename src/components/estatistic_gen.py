@@ -28,14 +28,21 @@ class EstatisticGen:
         Generates a data statistics from a CSV file.
         """
 
+        os.makedirs(self.output_path, exist_ok=True)
+
+        output_path = os.path.join(self.output_path, "statistics.json")
+
         with mlflow.start_run(run_name="Estatistics Generation", nested=True):
+
+            if os.path.exists(output_path):
+                logging.info("Estatistics already exists in %s", output_path)
+                mlflow.log_artifact(output_path)
+                return
+
             logging.info("Estatistics Generation")
             df = pd.read_csv(self.input_path)
             stats = df.describe().to_dict()
 
-            os.makedirs(self.output_path, exist_ok=True)
-
-            output_path = os.path.join(self.output_path, "statistics.json")
             joblib.dump(stats, output_path)
 
             mlflow.log_dict(stats, "statistics.json")

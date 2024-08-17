@@ -53,7 +53,16 @@ class DataIngestor:
             None
         """
 
+        os.makedirs(self.output_path, exist_ok=True)
+
+        output_file = os.path.join(self.output_path, "data.csv")
+
         with mlflow.start_run(run_name="Ingestion Data", nested=True):
+            if os.path.exists(output_file):
+                logging.info("Data already exists in %s", self.output_path)
+                mlflow.log_artifact(output_file)
+                return
+
             logging.info("Reading data from %s", self.input_path)
             df = pd.read_csv(self.input_path)
 
@@ -64,10 +73,6 @@ class DataIngestor:
 
             df['Attrition'] = df['Attrition'].map(VALUES_TO_REPLACE)
             df['OverTime'] = df['OverTime'].map(VALUES_TO_REPLACE)
-
-            os.makedirs(self.output_path, exist_ok=True)
-
-            output_file = os.path.join(self.output_path, "data.csv")
 
             df.to_csv(output_file, index=False)
             mlflow.log_artifact(output_file)

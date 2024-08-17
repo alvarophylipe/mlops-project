@@ -29,7 +29,18 @@ class SchemaGen:
         """
         Generates a data schema from a CSV file.
         """
+
+        os.makedirs(self.output_path, exist_ok=True)
+
+        output_file = os.path.join(self.output_path, "schema.json")
+
         with mlflow.start_run(run_name="Data Schema Generation", nested=True):
+
+            if os.path.exists(output_file):
+                logging.info("Data schema already exists in %s", output_file)
+                mlflow.log_artifact(output_file)
+                return
+
             logging.info("Generating data schema from %s", self.input_path)
             df = pd.read_csv(self.input_path)
 
@@ -37,9 +48,6 @@ class SchemaGen:
             loaded_schema = self._load_schema_from_json(schema_json)
             modified_schema = self._modify_schema_based_on_df(loaded_schema,
                                                               df)
-
-            output_file = self._prepare_output_file_path()
-
             if self.validate_dataframe(df, modified_schema):
                 modified_schema.to_json(output_file)
                 logging.info("Data schema saved to %s", output_file)
@@ -125,18 +133,6 @@ class SchemaGen:
             schema.columns[column].checks = checks
             logging.info("Data schema modified for column %s", column)
         return schema
-
-    def _prepare_output_file_path(self) -> str:
-        """
-        Prepares the output file path and creates the directory if it doesn't
-        exist.
-
-        Returns:
-            str: The output file path.
-        """
-        if not os.path.exists(self.output_path):
-            os.makedirs(self.output_path)
-        return os.path.join(self.output_path, "schema.json")
 
     def validate_dataframe(self, df: pd.DataFrame,
                            schema: pa.DataFrameSchema) -> bool:
