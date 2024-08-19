@@ -9,6 +9,8 @@ PROJECT_ROOT: str = os.path.dirname(SRC_PATH)
 ARTIFACTS_PATH: str = os.path.join(PROJECT_ROOT, "artifacts")
 NOTEBOOK_PATH: str = os.path.join(PROJECT_ROOT, "notebook")
 
+os.makedirs(ARTIFACTS_PATH, exist_ok=True)
+
 # Data Ingestion Constants
 DATA_INGESTION_INPUT_PATH: str = os.path.join(NOTEBOOK_PATH, "data",
                                               "IBM_Employee_Attrition.csv")

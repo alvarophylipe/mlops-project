@@ -6,8 +6,7 @@ from src.components.transform import Transform
 from src.components.trainer import Trainer
 from src.components.evaluator import Evaluator
 from src.components.pusher import Pusher
-from src.constants import (DATA_INGESTION_INPUT_PATH,
-                           DATA_INGESTION_OUTPUT_PATH,
+from src.constants import (DATA_INGESTION_OUTPUT_PATH,
                            STATS_GEN_OUTPUT_PATH,
                            SCHEMA_GEN_OUTPUT_PATH,
                            TRANSFORM_OUTPUT_PATH,
@@ -16,7 +15,7 @@ from src.constants import (DATA_INGESTION_INPUT_PATH,
                            PUSHER_OUTPUT_PATH)
 
 
-def run_pipeline(experiment_name: str) -> None:
+def run_pipeline(experiment_name: str, csv_path: str) -> None:
     """
     This function runs a machine learning pipeline.
 
@@ -44,7 +43,7 @@ def run_pipeline(experiment_name: str) -> None:
     with mlflow.start_run(run_name="Pipeline"):
 
         ingestor = DataIngestor(
-            input_path=DATA_INGESTION_INPUT_PATH,
+            input_path=csv_path,
             output_path=DATA_INGESTION_OUTPUT_PATH
         )
         ingestor.ingest()
